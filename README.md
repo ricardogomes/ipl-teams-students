@@ -1,9 +1,8 @@
 # IPL Teams User Creator
 
-These scripts allow for the insertion of students into an existing Team, and the creation of private channels.
+These scripts allow for the insertion of students into an existing Team, and also Channels (for a subset of those students).
 
 The inputs are csv files with emails.
-
 
 ## Preparation
 
@@ -11,7 +10,7 @@ These scripts are Powershell scripts, and so require it. It's possible to instal
 
 Having Powershell, the next step is to install the Teams Module. The recomendend way is to use the PowerShellGet tool.
 
-The followinf commands need to be executed in a Adminstrator priviledged Powershell (right-click Powershell -> Run as Administrator).
+The following commands need to be executed in a Adminstrator priviledged Powershell (right-click Powershell -> Run as Administrator).
 
 ```powershell
 Install-Module -Name PowerShellGet -Force -AllowClobber
@@ -47,11 +46,25 @@ Team creation carries the normal issues like having an unique name.
 
 For simplicity these scripts assume that both the Team and the Channels are already created.
 
+These scripts are not digitally signed so before their execution the Execution Policy must be set to **Unrestricted**.
+
+```powershell
+Set-ExecutionPolicy Unrestricted
+```
+
 The first script to run should be the ```.\addStudents.ps1```. This script adds each student in the file ```./inputs/students.csv``` to the specified Team (The script will ask for the Team name).
 
 After that one, the ```.\addStudentsToChannel.ps1``` can opcionally be run for each Channel. This script will allow for the Channel selection and list the files under ```./inputs/channels/``` also allowing for its selection.
 
 The first step in the execution is to log on to the Teams instance. This happens in every execution, on multiple subsequent executions the ```Connect-MicrosoftTeams | Out-Null``` line can be commented (#) as the session will persist.
+
+After their execution the Execution Policy should be reset to **AllSigned**.
+
+These scripts are not digitally signed so before their execution the Execution Policy must be set to **Unrestricted**.
+
+```powershell
+Set-ExecutionPolicy AllSigned
+```
 
 ## Resources
 
