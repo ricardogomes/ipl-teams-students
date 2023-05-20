@@ -44,7 +44,7 @@ For both the initial students and the channels the files need to have a field ca
 
 Team creation carries the normal issues like having an unique name. 
 
-For simplicity these scripts assume that both the Team and the Channels are already created.
+**For simplicity these scripts assume that both the Team and the Channels are already created**.
 
 These scripts are not digitally signed so before their execution the Execution Policy must be set to **Unrestricted**.
 
@@ -56,11 +56,9 @@ The first script to run should be the ```.\addStudents.ps1```. This script adds 
 
 After that one, the ```.\addStudentsToChannel.ps1``` can opcionally be run for each Channel. This script will allow for the Channel selection and list the files under ```./inputs/channels/``` also allowing for its selection.
 
-The first step in the execution is to log on to the Teams instance. This happens in every execution, on multiple subsequent executions the ```Connect-MicrosoftTeams | Out-Null``` line can be commented (#) as the session will persist.
+The first step in the execution is to logon to the Teams instance. This happens in every execution, on multiple subsequent executions the ```Connect-MicrosoftTeams | Out-Null``` line can be commented (#) as the session will persist.
 
 After their execution the Execution Policy should be reset to **AllSigned**.
-
-These scripts are not digitally signed so before their execution the Execution Policy must be set to **Unrestricted**.
 
 ```powershell
 Set-ExecutionPolicy AllSigned
