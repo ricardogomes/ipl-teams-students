@@ -42,7 +42,7 @@ For both the initial students and the channels the files need to have a field ca
 
 ## Execution
 
-Team creation carries the normal issues like having an unique name. 
+Team creation carries the normal issues like having an unique name.
 
 **For simplicity these scripts assume that both the Team and the Channels are already created**.
 
@@ -52,11 +52,11 @@ These scripts are not digitally signed so before their execution the Execution P
 Set-ExecutionPolicy Unrestricted
 ```
 
-The first script to run should be the ```.\addStudents.ps1```. This script adds each student in the file ```./inputs/students.csv``` to the specified Team (The script will ask for the Team name).
+The first script to run should be the `.\addStudents.ps1`. This script adds each student in the file `./inputs/students.csv` to the specified Team (The script will ask for the Team name).
 
-After that one, the ```.\addStudentsToChannel.ps1``` can opcionally be run for each Channel. This script will allow for the Channel selection and list the files under ```./inputs/channels/``` also allowing for its selection.
+After that one, the `.\addStudentsToChannel.ps1` can opcionally be run for each Channel. This script will allow for the Channel selection and list the files under `./inputs/channels/` also allowing for its selection.
 
-The first step in the execution is to logon to the Teams instance. This happens in every execution, on multiple subsequent executions the ```Connect-MicrosoftTeams | Out-Null``` line can be commented (#) as the session will persist.
+The first step in the execution is to logon to the Teams instance. This happens in every execution, on multiple subsequent executions the `Connect-MicrosoftTeams | Out-Null` line can be commented (#) as the session will persist.
 
 After their execution the Execution Policy should be reset to **AllSigned**.
 
@@ -70,4 +70,3 @@ Set-ExecutionPolicy AllSigned
 - [Installing Powershell in MacOS](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-macos?view=powershell-7.3)
 - [Installing Powershell Teams Module](https://learn.microsoft.com/en-us/microsoftteams/teams-powershell-install)
 - [Teams Powershell Cmdlet Reference](https://learn.microsoft.com/en-us/powershell/teams/?view=teams-ps)
-

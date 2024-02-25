@@ -1,5 +1,5 @@
 **/*.csv
-
+history
 
 !**/students_example.csv
 !**/channel_example.csv
