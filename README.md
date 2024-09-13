@@ -36,7 +36,7 @@ Import-Module MicrosoftTeams
 
 ## Data
 
-These scripts require CSV files under the input directory (and channels subdirectory). For the initial student creation the script expects a file under inputs called **students.csv**. For the channels the user can choose which file to process for each Channel.
+These scripts require CSV files under the input directory (and channels subdirectory). For the initial student creation the script expects a file under inputs called **students.csv**. For the channels the file should be named exactly as the actual channel name (minus the csv extension).
 
 For both the initial students and the channels the files need to have a field called **email** (can be seen in the examples). The files can have other fields (they are not considered).
 
@@ -44,7 +44,7 @@ For both the initial students and the channels the files need to have a field ca
 
 Team creation carries the normal issues like having an unique name.
 
-**For simplicity these scripts assume that both the Team and the Channels are already created**.
+**For simplicity these scripts assume that the Team is already created**.
 
 These scripts are not digitally signed so before their execution the Execution Policy must be set to **Unrestricted**.
 
@@ -52,9 +52,11 @@ These scripts are not digitally signed so before their execution the Execution P
 Set-ExecutionPolicy Unrestricted
 ```
 
-The first script to run should be the `.\addStudents.ps1`. This script adds each student in the file `./inputs/students.csv` to the specified Team (The script will ask for the Team name).
+The first script to run should be the `.\setup.ps1`. It will ask for the number of the practical shifts (day and night), and create one channel for each with name `<D|PL> - PL<X>`.
 
-After that one, the `.\addStudentsToChannel.ps1` can opcionally be run for each Channel. This script will allow for the Channel selection and list the files under `./inputs/channels/` also allowing for its selection.
+Next should be the `.\addStudents.ps1`. This script adds each student in the file `./inputs/students.csv` to the specified Team (The script will ask for the Team name).
+
+After that one, the `.\addStudentsToChannel.ps1`. This script will allow for the Channel selection and list the files under `./inputs/channels/`.
 
 The first step in the execution is to logon to the Teams instance. This happens in every execution, on multiple subsequent executions the `Connect-MicrosoftTeams | Out-Null` line can be commented (#) as the session will persist.
 
