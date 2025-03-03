@@ -178,3 +178,41 @@ function Add-TeamMember {
         return $false
     }
 }
+
+function Get-TeamOwners {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$GroupId
+    )
+    
+    try {
+        $TeamUsers = Get-TeamUser -GroupId $GroupId -Role Owner -ErrorAction Stop
+        Write-Host "Found $($TeamUsers.Count) team owners." -ForegroundColor Green
+        return $TeamUsers
+    } catch {
+        Write-Error "Failed to retrieve team owners. Error: $_"
+        return $null
+    }
+}
+
+function Add-ChannelOwner {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$GroupId,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$ChannelName,
+        
+        [Parameter(Mandatory=$true)]
+        [string]$UserEmail
+    )
+    
+    try {
+        Add-TeamChannelUser -GroupId $GroupId -DisplayName $ChannelName -User $UserEmail -Role Owner -ErrorAction Stop
+        Write-Host "`tAdded $UserEmail as owner to channel '$ChannelName'" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Error "`tFailed to add $UserEmail as owner to channel '$ChannelName'. Error: $_"
+        return $false
+    }
+}

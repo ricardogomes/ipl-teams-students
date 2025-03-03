@@ -14,7 +14,9 @@
         'Write-OperationSummary',
         'Read-ValidInteger',
         'New-PrivateChannel',
-        'Add-TeamMember'
+        'Add-TeamMember',
+        'Get-TeamOwners',
+        'Add-ChannelOwner'
     )
     PrivateData = @{
         PSData = @{
