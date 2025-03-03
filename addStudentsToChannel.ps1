@@ -1,27 +1,20 @@
 Import-Module MicrosoftTeams -ErrorAction Stop
+Import-Module "$PSScriptRoot\Modules\TeamsManagement\TeamsManagement.psm1" -Force
 
 Write-Host "|   IPL - Teams - Add Students to Channels |" -BackgroundColor DarkGreen -ForegroundColor White
 Write-Host "Connecting to Teams - Sign In "
 
-try {
-    Connect-MicrosoftTeams -ErrorAction Stop | Out-Null
-    Write-Host "Successfully connected to Microsoft Teams." -ForegroundColor Green
-} catch {
-    Write-Error "Failed to connect to Microsoft Teams. Please check your credentials and try again."
+if (-not (Connect-TeamSession)) {
     exit
 }
 
 $TeamName = Read-Host "Type the Team Name"
-
-try {
-    $Team = Get-Team -DisplayName $TeamName -ErrorAction Stop
-    $GroupId = $Team.GroupId
-    Write-Host "Team '$TeamName' found with GroupId: $GroupId" -ForegroundColor Green
-} catch {
-    Write-Error "Team '$TeamName' not found. Please ensure the team exists and you have the necessary permissions."
+$Team = Get-TeamByName -TeamName $TeamName
+if (-not $Team) {
     exit
 }
 
+$GroupId = $Team.GroupId
 $ChannelsPath = ".\inputs\channels\"
 
 if (-Not (Test-Path -Path $ChannelsPath)) {
@@ -30,21 +23,16 @@ if (-Not (Test-Path -Path $ChannelsPath)) {
 }
 
 $CSVFiles = Get-ChildItem -Path $ChannelsPath -Filter *.csv
-
 if ($CSVFiles.Count -eq 0) {
     Write-Error "No CSV files found in '$ChannelsPath'. Please ensure the directory contains the necessary CSV files."
     exit
 }
 
-try {
-    Write-Host "`nRetrieving existing channels in the team..."
-    $ExistingChannels = Get-TeamChannel -GroupId $GroupId -ErrorAction Stop
-    $ExistingChannelNames = $ExistingChannels.DisplayName
-    Write-Host "Found $($ExistingChannels.Count) channels in team '$TeamName'." -ForegroundColor Green
-} catch {
-    Write-Error "Failed to retrieve channels for team '$TeamName'. Error: $_"
+$ExistingChannels = Get-TeamChannels -GroupId $GroupId
+if (-not $ExistingChannels) {
     exit
 }
+$ExistingChannelNames = $ExistingChannels.DisplayName
 
 $TotalFiles = $CSVFiles.Count
 $ProcessedFiles = 0
@@ -58,7 +46,6 @@ foreach ($File in $CSVFiles) {
     
     Write-Host "`nProcessing File: '$FileName' for Channel: '$ChannelName'" -ForegroundColor Cyan
 
-
     if ($ExistingChannelNames -notcontains $ChannelName) {
         Write-Warning "Channel '$ChannelName' does not exist in team '$TeamName'. Skipping file '$FileName'."
         $SkippedFiles++
@@ -66,37 +53,18 @@ foreach ($File in $CSVFiles) {
     }
 
     $CSVFilePath = Join-Path -Path $ChannelsPath -ChildPath $FileName
-
-    try {
-        $Users = Import-Csv -Path $CSVFilePath -ErrorAction Stop
-        if ($Users.Count -eq 0) {
-            Write-Warning "CSV file '$FileName' is empty. Skipping."
-            $SkippedFiles++
-            continue
-        }
-    } catch {
-        Write-Warning "Failed to import CSV file '$FileName'. Error: $_. Skipping."
+    $Users = Import-ChannelUsers -FilePath $CSVFilePath
+    
+    if (-not $Users) {
         $SkippedFiles++
         continue
     }
 
     foreach ($User in $Users) {
-        $UserEmail = $User.email
-
-        if ([string]::IsNullOrWhiteSpace($UserEmail)) {
-            Write-Host "`tSkipping empty email entry in file '$FileName'." -ForegroundColor Yellow
-            continue
-        }
-
-        Write-Host "`tAdding user '$UserEmail' to channel '$ChannelName'..." -NoNewLine
-
-        try {
-            Add-TeamChannelUser -GroupId $GroupId -DisplayName $ChannelName -User $UserEmail -ErrorAction Stop
-            Write-Host " Success" -ForegroundColor Green
+        $Success = Add-UserToChannel -GroupId $GroupId -ChannelName $ChannelName -UserEmail $User.email
+        if ($Success) {
             $AddedUsers++
-        } catch {
-            Write-Host " Failed" -ForegroundColor Red
-            Write-Host "`t`tError adding '$UserEmail' to '$ChannelName': $_" -ForegroundColor Red
+        } else {
             $FailedAdds++
         }
     }
@@ -104,13 +72,6 @@ foreach ($File in $CSVFiles) {
     $ProcessedFiles++
 }
 
-# Summary of operations
-Write-Host "`n=== Operation Summary ===" -ForegroundColor Yellow
-Write-Host "Total CSV Files Found: $TotalFiles"
-Write-Host "Files Processed: $ProcessedFiles"
-Write-Host "Files Skipped: $SkippedFiles"
-Write-Host "Total Users Added Successfully: $AddedUsers" -ForegroundColor Green
-Write-Host "Total Failed User Additions: $FailedAdds" -ForegroundColor Red
-Write-Host "=========================`n" -ForegroundColor Yellow
+Write-OperationSummary -TotalFiles $TotalFiles -ProcessedFiles $ProcessedFiles -SkippedFiles $SkippedFiles -AddedUsers $AddedUsers -FailedAdds $FailedAdds
 
 Write-Host "DONE" -ForegroundColor Cyan

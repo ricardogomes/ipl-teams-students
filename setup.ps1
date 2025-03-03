@@ -1,98 +1,68 @@
-Import-Module MicrosoftTeams
+Import-Module MicrosoftTeams -ErrorAction Stop
+Import-Module "$PSScriptRoot\Modules\TeamsManagement\TeamsManagement.psm1" -Force
 
 Write-Host "|   IPL - Teams - Set Up Team  |" -BackgroundColor DarkGreen -ForegroundColor White
 Write-Host "Connecting to Teams - Sign In "
 
-try {
-    Connect-MicrosoftTeams -ErrorAction Stop
-    Write-Host "Successfully connected to Microsoft Teams." -ForegroundColor Green
-} catch {
-    Write-Error "Failed to connect to Microsoft Teams. Please check your credentials and try again."
+if (-not (Connect-TeamSession)) {
     exit
 }
-
-$coTeacherID = "<CHANGE TO ADD ANOTHER TEACH AS OWNER OF THE TEAM - NEEDS TO BE THE USER ID - Get-TeamUser -GroupId X -Role Owner>"
 
 $TeamName = Read-Host "Type the Team Name"
-
-do {
-    $dInput = Read-Host "How many day practical shifts?"
-    if ([int]::TryParse($dInput, [ref]$null)) {
-        $d = [int]$dInput
-        if ($d -lt 0) {
-            Write-Host "Please enter a non-negative integer." -ForegroundColor Yellow
-            $d = $null
-        }
-    } else {
-        Write-Host "Invalid input. Please enter a valid integer." -ForegroundColor Yellow
-    }
-} until ($d -ne $null)
-
-do {
-    $nInput = Read-Host "How many night practical shifts?"
-    if ([int]::TryParse($nInput, [ref]$null)) {
-        $n = [int]$nInput
-        if ($n -lt 0) {
-            Write-Host "Please enter a non-negative integer." -ForegroundColor Yellow
-            $n = $null
-        }
-    } else {
-        Write-Host "Invalid input. Please enter a valid integer." -ForegroundColor Yellow
-    }
-} until ($n -ne $null)
-
-
-try {
-    $team = Get-Team -DisplayName $TeamName -ErrorAction Stop
-    Write-Host "Team '$TeamName' found with GroupId: $($team.GroupId)" -ForegroundColor Green
-} catch {
-    Write-Error "Team '$TeamName' not found. Please ensure the team exists and you have the necessary permissions."
+$Team = Get-TeamByName -TeamName $TeamName
+if (-not $Team) {
     exit
 }
 
-$groupId = $team.GroupId
+$GroupId = $Team.GroupId
 
-# Function to create a private channel
-function New-PrivateChannel {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$ChannelName
-    )
+# Get number of shifts
+$DayShifts = Read-ValidInteger -Prompt "How many day practical shifts?"
+$NightShifts = Read-ValidInteger -Prompt "How many night practical shifts?"
 
-    Write-Host "Creating private channel: $ChannelName"
+# Create Theoretical Channels
+$TheoreticalChannels = @(
+    @{ Name = "D - T"; Description = "Theoretical classes - Day shift" },
+    @{ Name = "PL - T"; Description = "Theoretical classes - Night shift" }
+)
 
-    try {
-        New-TeamChannel `
-            -GroupId $groupId `
-            -DisplayName $ChannelName `
-            -Description "Private channel for $ChannelName" `
-            -MembershipType Private `
-            -Owner $coTeacherID `
-            -ErrorAction Stop
+$SuccessCount = 0
+$FailedCount = 0
 
-        Write-Host "Channel '$ChannelName' created successfully." -ForegroundColor Green
-    } catch {
-        Write-Error "Failed to create channel '$ChannelName'. Error: $_"
+# Create theoretical channels
+foreach ($Channel in $TheoreticalChannels) {
+    if (New-PrivateChannel -GroupId $GroupId -ChannelName $Channel.Name -Description $Channel.Description) {
+        $SuccessCount++
+    } else {
+        $FailedCount++
     }
 }
 
-# Create Theoretical Channels
-$theoreticalDayChannel = "D - T"
-$theoreticalNightChannel = "PL - T"
-
-New-PrivateChannel -ChannelName $theoreticalDayChannel
-New-PrivateChannel -ChannelName $theoreticalNightChannel
-
 # Create Practical Day Shift Channels
-for ($i = 1; $i -le $d; $i++) {
-    $channelName = "D - PL$i"
-    New-PrivateChannel -ChannelName $channelName
+for ($i = 1; $i -le $DayShifts; $i++) {
+    $ChannelName = "D - PL$i"
+    $Description = "Practical classes - Day shift group $i"
+    if (New-PrivateChannel -GroupId $GroupId -ChannelName $ChannelName -Description $Description) {
+        $SuccessCount++
+    } else {
+        $FailedCount++
+    }
 }
 
 # Create Practical Night Shift Channels
-for ($i = 1; $i -le $n; $i++) {
-    $channelName = "PL - PL$i"
-    New-PrivateChannel -ChannelName $channelName
+for ($i = 1; $i -le $NightShifts; $i++) {
+    $ChannelName = "PL - PL$i"
+    $Description = "Practical classes - Night shift group $i"
+    if (New-PrivateChannel -GroupId $GroupId -ChannelName $ChannelName -Description $Description) {
+        $SuccessCount++
+    } else {
+        $FailedCount++
+    }
 }
 
-Write-Host "All specified channels have been created successfully." -ForegroundColor Cyan
+Write-Host "`n=== Channel Creation Summary ===" -ForegroundColor Yellow
+Write-Host "Successfully created channels: $SuccessCount" -ForegroundColor Green
+Write-Host "Failed to create channels: $FailedCount" -ForegroundColor Red
+Write-Host "=========================`n" -ForegroundColor Yellow
+
+Write-Host "DONE" -ForegroundColor Cyan

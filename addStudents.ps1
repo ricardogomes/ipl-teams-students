@@ -1,24 +1,54 @@
-Import-Module MicrosoftTeams
+Import-Module MicrosoftTeams -ErrorAction Stop
+Import-Module "$PSScriptRoot\Modules\TeamsManagement\TeamsManagement.psm1" -Force
 
 Write-Host "|   IPL - Teams - Add Students  |" -BackgroundColor DarkGreen -ForegroundColor White
 Write-Host "Connecting to Teams - Sign In "
 
-Connect-MicrosoftTeams | Out-Null
+if (-not (Connect-TeamSession)) {
+    exit
+}
 
-Write-Host "Type the Team Name:"
-$TeamName = Read-Host
+$TeamName = Read-Host "Type the Team Name"
+$Team = Get-TeamByName -TeamName $TeamName
+if (-not $Team) {
+    exit
+}
 
-$Team = Get-Team -DisplayName $TeamName
 $GroupId = $Team.GroupId
+$StudentsFile = ".\inputs\students.csv"
+
+if (-not (Test-Path -Path $StudentsFile)) {
+    Write-Error "Students file not found at '$StudentsFile'. Please ensure the file exists."
+    exit
+}
 
 Write-Host "`nAdding Students to $TeamName [$GroupId]"
 
-Import-CSV ".\inputs\students.csv" | ForEach-Object {
+$Students = Import-Csv -Path $StudentsFile
+$TotalStudents = $Students.Count
+$SuccessCount = 0
+$FailedCount = 0
 
-    $User = $_.'email'
-
-    Write-Host "`tProcessing $User"
-
-    Add-TeamUser -GroupId $GroupId -User $User
-
+foreach ($Student in $Students) {
+    $UserEmail = $Student.email
+    
+    if ([string]::IsNullOrWhiteSpace($UserEmail)) {
+        Write-Warning "Skipping empty email entry"
+        $FailedCount++
+        continue
+    }
+    
+    if (Add-TeamMember -GroupId $GroupId -UserEmail $UserEmail) {
+        $SuccessCount++
+    } else {
+        $FailedCount++
+    }
 }
+
+Write-Host "`n=== Student Addition Summary ===" -ForegroundColor Yellow
+Write-Host "Total students processed: $TotalStudents"
+Write-Host "Successfully added: $SuccessCount" -ForegroundColor Green
+Write-Host "Failed to add: $FailedCount" -ForegroundColor Red
+Write-Host "=========================`n" -ForegroundColor Yellow
+
+Write-Host "DONE" -ForegroundColor Cyan
